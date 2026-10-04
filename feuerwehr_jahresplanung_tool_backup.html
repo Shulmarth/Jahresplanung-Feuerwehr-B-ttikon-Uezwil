@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="de" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feuerwehr Büttikon-Uezwil – Jahresplanung (BACKUP)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            fire: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              800: '#991b1b',
+              900: '#7f1d1d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-100 antialiased">
+
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-wide text-white uppercase">
+            FEUERWEHR BÜTTIKON-UEZWIL
+          </h1>
+          <div class="flex items-center gap-2 mt-0.5 flex-wrap text-xs">
+            <span class="text-slate-400">Jahresplanung</span>
+            <span class="text-slate-600 font-light select-none">|</span>
+            <div id="year-selector-container" class="inline-flex items-center gap-2">
+              <!-- Rendered dynamically -->
+            </div>
+            <span class="text-slate-600 font-light select-none">|</span>
+            <div class="inline-flex items-center gap-2">
+              <button onclick="exportToExcel()" class="text-slate-400 hover:text-white transition-all duration-150" title="Jahresplan als Excel herunterladen">
+                Excel
+              </button>
+              <button onclick="exportToPDF()" class="text-slate-400 hover:text-white transition-all duration-150" title="Visuelle PDF-Version erstellen">
+                PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full md:w-auto">
+          
+          <button id="auth-btn-header" onclick="openAuthModal('login')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-2 border border-slate-700 transition">
+            <i class="fa-solid fa-user text-amber-400"></i>
+            <span>Anmelden / Registrieren</span>
+          </button>
+
+          <div class="flex items-center bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs gap-2">
+            <span class="text-slate-400 font-semibold hidden sm:inline flex items-center gap-1.5">
+              <i class="fa-solid fa-user-shield text-fire-500"></i> Rolle:
+            </span>
+            <select id="sim-role-select" onchange="switchSimulatedRole(this.value)" class="bg-slate-900 text-amber-400 font-bold rounded-lg px-2.5 py-1 border border-slate-700 focus:outline-none cursor-pointer">
+              <option value="kommandant">Kommandant (Admin)</option>
+              <option value="kommandant_stv">Kommandant Stv</option>
+              <option value="fourier">Fourier</option>
+              <option value="atemschutz">Chef Atemschutz</option>
+              <option value="atemschutz_fitnesstest">Chef Atemschutz Fitnesstest</option>
+              <option value="maschinisten">Chef Maschinisten</option>
+              <option value="fahrer">Chef Fahrer</option>
+              <option value="verkehr">Chef Verkehr</option>
+              <option value="sanitaet">Chef Sanität</option>
+              <option value="elektra">Chef Elektra</option>
+              <option value="guest">Gast (Nur Lesen)</option>
+            </select>
+          </div>
+
+          <button id="admin-users-btn" onclick="openAdminUsersModal()" class="bg-fire-600/20 hover:bg-fire-600/30 text-fire-300 border border-fire-500/40 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 transition relative">
+            <i class="fa-solid fa-users-gear text-fire-400"></i>
+            <span>Nutzer freischalten</span>
+            <span id="pending-users-badge" class="hidden bg-fire-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full">0</span>
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+    <!-- Quotas Dashboard -->
+    <div class="glass-card rounded-2xl p-6 shadow-xl">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-800">
+        <div>
+          <h2 id="quota-title" class="text-base font-bold text-white uppercase tracking-wider">
+            Übungskontingente 2027
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Übersicht aller Kontingente und deren aktuellen Buchungsstand</p>
+        </div>
+        <span class="text-xs font-bold text-slate-200 bg-slate-950 border border-slate-800 px-4 py-2 rounded-xl shadow-inner" id="quota-total-summary">
+          Gesamt: 0 Übungen verteilt
+        </span>
+      </div>
+
+      <!-- Quota Cards Container -->
+      <div id="quota-bars-container" class="space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Toolbar & Filter Controls -->
+    <div class="glass-card p-4 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-xl">
+      
+      <div class="flex flex-wrap items-center gap-3 flex-grow">
+        <div class="relative flex-grow sm:flex-grow-0 sm:w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+          <input type="text" id="search-input" onkeyup="renderCalendar()" placeholder="Übung oder Ort suchen..." class="w-full bg-slate-950 border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-fire-500 shadow-inner">
+        </div>
+
+        <select id="category-filter" onchange="renderCalendar()" class="bg-slate-950 border border-slate-700/80 text-xs text-slate-200 font-medium rounded-xl px-3 py-2 focus:outline-none focus:border-fire-500 cursor-pointer shadow-inner">
+          <option value="all">Alle Sparten / Abteilungen</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-3 justify-between sm:justify-end">
+        <div class="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center text-xs">
+          <button id="view-year-btn" onclick="setViewMode('year')" class="px-3.5 py-1.5 rounded-lg font-bold transition bg-fire-600 text-white shadow">
+            <i class="fa-solid fa-calendar-days"></i> 12 Monate
+          </button>
+          <button id="view-month-btn" onclick="setViewMode('month')" class="px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-calendar-month"></i> Monat
+          </button>
+          <button id="view-list-btn" onclick="setViewMode('list')" class="px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-list-ul"></i> Liste
+          </button>
+        </div>
+
+        <button id="add-exercise-btn" onclick="openAddModal()" class="bg-fire-600 hover:bg-fire-500 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow-lg shadow-fire-600/25 active:scale-95">
+          <i class="fa-solid fa-plus text-sm"></i>
+          <span>Neue Übung eintragen</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Calendar Container -->
+    <div id="calendar-container" class="w-full">
+      <!-- Dynamic views -->
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Confirm Dialog Modal -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative text-center">
+      <i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl mb-3"></i>
+      <h3 id="confirm-title" class="text-sm font-bold text-white mb-2">Bestätigung erforderlich</h3>
+      <p id="confirm-message" class="text-xs text-slate-300 mb-6">Möchtest du diese Aktion ausführen?</p>
+      <div class="flex items-center justify-center gap-3">
+        <button id="confirm-cancel-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">Abbrechen</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 bg-fire-600 hover:bg-fire-500 text-white text-xs font-bold rounded-xl">Löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Add/Edit Exercise Modal -->
+  <div id="exercise-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto custom-scrollbar">
+      
+      <button onclick="closeExerciseModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 id="modal-title" class="text-lg font-extrabold text-white mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-calendar-plus text-fire-500"></i> Neue Übung eintragen
+      </h3>
+
+      <form id="exercise-form" onsubmit="handleExerciseFormSubmit(event)" class="space-y-4 text-xs">
+        <input type="hidden" id="exercise-id">
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Sparte / Abteilung *</label>
+          <select id="form-category" onchange="handleCategorySelectChange()" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+            <!-- Rendered dynamically -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Datum *</label>
+            <input type="date" id="form-date" required class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Startzeit *</label>
+            <input type="time" id="form-time-start" required value="19:30" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Endzeit *</label>
+            <input type="time" id="form-time-end" required value="21:30" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Ort / Treffpunkt *</label>
+          <select id="form-location-select" onchange="handleLocationSelectChange()" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 mb-2 focus:border-fire-500 focus:outline-none">
+            <option value="Feuerwehrlokal Uezwil">Feuerwehrlokal Uezwil</option>
+            <option value="Feuerwehrlokal Büttikon">Feuerwehrlokal Büttikon</option>
+            <option value="custom">Anderer Ort (manuell eingeben)...</option>
+          </select>
+          <input type="text" id="form-location-custom" placeholder="z. B. Ort, Strasse" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 hidden focus:border-fire-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1.5 uppercase tracking-wide">Beschreibung / Zusatzinfos (Optional)</label>
+          <textarea id="form-description" rows="3" placeholder="Ausrüstung, Thema oder Bemerkungen..." class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none"></textarea>
+        </div>
+
+        <div id="kombi-notice" class="hidden bg-violet-500/10 border border-violet-500/30 p-3 rounded-xl text-violet-300 flex items-start gap-2.5">
+          <i class="fa-solid fa-circle-info text-violet-400 mt-0.5 text-sm"></i>
+          <div>
+            <span class="font-extrabold">Gemeinsame Kombi-Übung:</span> Diese Übung zählt für Verkehr, Sanität und Elektra gemeinsam und ist für alle drei Abteilungen ersichtlich.
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+          <button type="button" id="form-delete-btn" onclick="handleModalDelete()" class="hidden px-4 py-2 bg-fire-900/40 hover:bg-fire-900/70 text-fire-300 font-bold rounded-xl border border-fire-800/50 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-trash"></i> Löschen
+          </button>
+          <div class="flex items-center gap-3 ml-auto">
+            <button type="button" onclick="closeExerciseModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl">Abbrechen</button>
+            <button type="submit" class="px-5 py-2 bg-fire-600 hover:bg-fire-500 text-white font-bold rounded-xl shadow-lg shadow-fire-600/30">Speichern</button>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: Auth Modal -->
+  <div id="auth-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Tabs: Anmelden / Registrieren -->
+      <div class="flex border-b border-slate-800 mb-6 font-bold text-xs">
+        <button id="auth-tab-login-btn" onclick="switchAuthTab('login')" class="flex-1 pb-3 border-b-2 border-fire-500 text-fire-400">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Anmelden
+        </button>
+        <button id="auth-tab-register-btn" onclick="switchAuthTab('register')" class="flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-white">
+          <i class="fa-solid fa-user-plus mr-1.5"></i>Registrieren
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wide">E-Mail Adresse *</label>
+          <input type="email" id="login-email" required placeholder="name@feuerwehr.ch" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wide">Passwort *</label>
+          <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <button type="button" onclick="triggerForgotPassword('login-email')" class="text-amber-400 hover:underline font-medium">Passwort vergessen?</button>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-fire-600 hover:bg-fire-500 text-white font-extrabold rounded-xl shadow-lg shadow-fire-600/30 uppercase tracking-wider text-xs transition">
+          Anmelden
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" onsubmit="handleRegisterSubmit(event)" class="space-y-4 text-xs hidden">
+        <div>
+          <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wide">E-Mail Adresse *</label>
+          <input type="email" id="register-email" required placeholder="name@feuerwehr.ch" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wide">Passwort *</label>
+          <input type="password" id="register-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-bold mb-1 uppercase tracking-wide">Gewünschte Funktion / Abteilung *</label>
+          <select id="register-role-request" class="w-full bg-slate-950 border border-slate-700 text-white rounded-xl p-2.5 focus:border-fire-500 focus:outline-none">
+            <option value="fourier">Fourier</option>
+            <option value="kommandant_stv">Kommandant Stv</option>
+            <option value="atemschutz">Chef Atemschutz</option>
+            <option value="atemschutz_fitnesstest">Chef Atemschutz Fitnesstest</option>
+            <option value="maschinisten">Chef Maschinisten</option>
+            <option value="fahrer">Chef Fahrer</option>
+            <option value="verkehr">Chef Verkehr</option>
+            <option value="sanitaet">Chef Sanität</option>
+            <option value="elektra">Chef Elektra</option>
+          </select>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-fire-600 hover:bg-fire-500 text-white font-extrabold rounded-xl shadow-lg shadow-fire-600/30 uppercase tracking-wider text-xs transition">
+          Konto Registrieren
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL 3: Admin Modal -->
+  <div id="admin-users-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <button onclick="closeAdminUsersModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-users-gear text-fire-500"></i> Benutzerverwaltung & Freischaltung
+      </h3>
+
+      <div class="flex border-b border-slate-800 mb-4 text-xs font-semibold">
+        <button id="admin-tab-pending-btn" onclick="switchAdminTab('pending')" class="px-4 py-2 border-b-2 border-fire-500 text-fire-400 font-bold">
+          Offene Freischaltungen
+        </button>
+        <button id="admin-tab-all-btn" onclick="switchAdminTab('all')" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white">
+          Alle E-Mail-Adressen & PW-Reset
+        </button>
+      </div>
+
+      <div id="admin-tab-pending" class="space-y-3">
+        <div id="pending-users-list" class="space-y-2 text-xs"></div>
+      </div>
+
+      <div id="admin-tab-all" class="space-y-3 hidden">
+        <div id="all-users-list" class="space-y-2 text-xs"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const CATEGORIES = [
+      { id: 'k_kader', name: 'Kaderübung', maxQuota: 5, color: 'bg-amber-600', isKommandant: true },
+      { id: 'k_sitzung', name: 'Kadersitzung', maxQuota: 1, color: 'bg-amber-800', isKommandant: true },
+      { id: 'k_haupt', name: 'Hauptübung', maxQuota: 1, color: 'bg-red-700', isKommandant: true },
+      { id: 'k_gesamt', name: 'Gesamtübung', maxQuota: 4, color: 'bg-red-600', isKommandant: true },
+      { id: 'k_rekrutierung', name: 'Rekrutierungsabend', maxQuota: 1, color: 'bg-orange-600', isKommandant: true },
+      { id: 'k_ausbildungssitzung', name: 'Ausbildungssitzung', maxQuota: 2, color: 'bg-indigo-600', isKommandant: true },
+      { id: 'k_kommission', name: 'Kommissionssitzung', maxQuota: 2, color: 'bg-teal-600', isKommandant: true },
+      { id: 'k_fruehlingsputz', name: 'Frühlingsputz', maxQuota: 1, color: 'bg-lime-600', isKommandant: true },
+      { id: 'atemschutz', name: 'Atemschutz', maxQuota: 6, color: 'bg-emerald-600', isKommandant: false },
+      { id: 'atemschutz_fitnesstest', name: 'Atemschutz Fitnesstest', maxQuota: 1, color: 'bg-emerald-700', isKommandant: false },
+      { id: 'maschinisten', name: 'Maschinisten', maxQuota: 6, color: 'bg-blue-600', isKommandant: false },
+      { id: 'fahrer', name: 'Fahrer', maxQuota: 3, color: 'bg-cyan-600', isKommandant: false },
+      { id: 'verkehr', name: 'Verkehr', maxQuota: 2, color: 'bg-purple-600', isKommandant: false },
+      { id: 'sanitaet', name: 'Sanität', maxQuota: 2, color: 'bg-pink-600', isKommandant: false },
+      { id: 'elektra', name: 'Elektra', maxQuota: 2, color: 'bg-yellow-600', isKommandant: false },
+      { id: 'kombi_vse', name: 'Kombi-Übung VSE (Ver/San/El)', maxQuota: 1, color: 'bg-violet-600', isKommandant: false }
+    ];
+
+    let currentRole = 'kommandant';
+    let currentViewMode = 'year'; 
+    let currentMonthIndex = 0;    
+    let currentYear = 2027;
+    let exercises = [];
+    let registeredUsers = [];
+    
+    let collapsedCards = {};
+    let sectionsCollapsed = {
+      my_open: false,
+      my_full: false,
+      open: false,
+      full: false
+    };
+
+    function toggleSection(sectionKey) {
+      sectionsCollapsed[sectionKey] = !sectionsCollapsed[sectionKey];
+      renderQuotaBars();
+    }
+
+    function toggleCardCollapse(event, catId) {
+      event.stopPropagation();
+      collapsedCards[catId] = !collapsedCards[catId];
+      renderQuotaBars();
+    }
+
+    function changeYear(year) {
+      currentYear = parseInt(year);
+      const titleEl = document.getElementById('quota-title');
+      if (titleEl) titleEl.textContent = `Übungskontingente ${currentYear}`;
+      renderYearButtons();
+      renderCalendar();
+      showToast(`Jahresansicht auf ${currentYear} gewechselt`, 'info');
+    }
+
+    function renderYearButtons() {
+      const container = document.getElementById('year-selector-container');
+      if (!container) return;
+      
+      const years = [currentYear - 1, currentYear, currentYear + 1];
+      container.innerHTML = years.map(y => {
+        const isActive = (y === currentYear);
+        return `
+          <button onclick="changeYear(${y})" class="text-xs transition-all duration-150 ${
+            isActive 
+              ? 'text-white cursor-default hover:text-white' 
+              : 'text-slate-400 hover:text-slate-200 hover:underline'
+          }">
+            ${y}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function loadInitialData() {
+      const savedEx = localStorage.getItem('fw_exercises_2027_v7');
+      if (savedEx) {
+        try { exercises = JSON.parse(savedEx); } catch(e) { exercises = []; }
+      } else {
+        exercises = [
+          { id: 'ex-1', categoryId: 'k_sitzung', date: '2027-01-11', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Jahresauftakt Kadersitzung 2027' },
+          { id: 'ex-k1', categoryId: 'k_kader', date: '2027-01-25', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Kaderübung 1' },
+          { id: 'ex-k2', categoryId: 'k_kader', date: '2027-03-22', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Kaderübung 2' },
+          { id: 'ex-k3', categoryId: 'k_kader', date: '2027-05-24', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Kaderübung 3' },
+          { id: 'ex-k4', categoryId: 'k_kader', date: '2027-08-23', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Kaderübung 4' },
+          { id: 'ex-k5', categoryId: 'k_kader', date: '2027-10-25', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Kaderübung 5' },
+          { id: 'ex-h1', categoryId: 'k_haupt', date: '2027-11-08', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Hauptübung 2027' },
+          { id: 'ex-g1', categoryId: 'k_gesamt', date: '2027-03-08', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: '1. Gesamtübung' },
+          { id: 'ex-g2', categoryId: 'k_gesamt', date: '2027-05-10', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: '2. Gesamtübung' },
+          { id: 'ex-g3', categoryId: 'k_gesamt', date: '2027-06-14', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: '3. Gesamtübung' },
+          { id: 'ex-g4', categoryId: 'k_gesamt', date: '2027-09-13', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: '4. Gesamtübung' },
+          { id: 'ex-rekrut', categoryId: 'k_rekrutierung', date: '2027-09-20', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Rekrutierungsabend' },
+          { id: 'ex-ausbildung', categoryId: 'k_ausbildungssitzung', date: '2027-02-01', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: '1. Ausbildungssitzung' },
+          { id: 'ex-kommission', categoryId: 'k_kommission', date: '2027-04-19', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: '1. Kommissionssitzung' },
+          { id: 'ex-putz', categoryId: 'k_fruehlingsputz', date: '2027-04-24', startTime: '08:00', endTime: '12:00', location: 'Feuerwehrlokal Uezwil', description: 'Frühlingsputz' },
+          { id: 'ex-a1', categoryId: 'atemschutz', date: '2027-02-08', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Atemschutz Übung 1' },
+          { id: 'ex-at-fit', categoryId: 'atemschutz_fitnesstest', date: '2027-05-03', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Atemschutz Fitnesstest' },
+          { id: 'ex-m1', categoryId: 'maschinisten', date: '2027-02-22', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Maschinisten Übung 1' },
+          { id: 'ex-f1', categoryId: 'fahrer', date: '2027-03-01', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Fahrer Übung 1' },
+          { id: 'ex-v1', categoryId: 'verkehr', date: '2027-03-15', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Verkehr Übung 1' },
+          { id: 'ex-s1', categoryId: 'sanitaet', date: '2027-03-29', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Uezwil', description: 'Sanität Übung 1' },
+          { id: 'ex-e1', categoryId: 'elektra', date: '2027-04-05', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Elektra Übung 1' },
+          { id: 'ex-kvse', categoryId: 'kombi_vse', date: '2027-06-07', startTime: '19:30', endTime: '21:30', location: 'Feuerwehrlokal Büttikon', description: 'Gemeinsame Kombi-Übung Verkehr / Sanität / Elektra' }
+        ];
+        saveExercises();
+      }
+
+      const savedUsers = localStorage.getItem('fw_users_2027');
+      if (savedUsers) {
+        try { registeredUsers = JSON.parse(savedUsers); } catch(e) { registeredUsers = []; }
+      } else {
+        registeredUsers = [
+          { uid: 'u1', email: 'atemschutz@feuerwehr.ch', role: 'atemschutz', status: 'active' },
+          { uid: 'u2', email: 'maschinisten@feuerwehr.ch', role: 'maschinisten', status: 'pending', requestedRole: 'maschinisten' }
+        ];
+        saveUsers();
+      }
+
+      renderYearButtons();
+      populateFilterOptions();
+      renderCalendar();
+    }
+
+    function saveExercises() {
+      localStorage.setItem('fw_exercises_2027_v7', JSON.stringify(exercises));
+    }
+
+    function saveUsers() {
+      localStorage.setItem('fw_users_2027', JSON.stringify(registeredUsers));
+      updatePendingBadge();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-fire-600 text-white',
+        info: 'bg-slate-800 text-slate-100 border border-slate-700'
+      };
+      const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-exclamation',
+        info: 'fa-circle-info'
+      };
+
+      toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-sm"></i> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function showConfirmModal(title, message, onConfirm) {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-title');
+      const msgEl = document.getElementById('confirm-message');
+      const okBtn = document.getElementById('confirm-ok-btn');
+      const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+
+      const handleOk = () => {
+        modal.classList.add('hidden');
+        okBtn.removeEventListener('click', handleOk);
+        cancelBtn.removeEventListener('click', handleCancel);
+        onConfirm();
+      };
+
+      const handleCancel = () => {
+        modal.classList.add('hidden');
+        okBtn.removeEventListener('click', handleOk);
+        cancelBtn.removeEventListener('click', handleCancel);
+      };
+
+      okBtn.addEventListener('click', handleOk);
+      cancelBtn.addEventListener('click', handleCancel);
+
+      modal.classList.remove('hidden');
+    }
+
+    function switchSimulatedRole(role) {
+      currentRole = role;
+      const adminBtn = document.getElementById('admin-users-btn');
+      if (adminBtn) {
+        if (role === 'kommandant') adminBtn.classList.remove('hidden');
+        else adminBtn.classList.add('hidden');
+      }
+      renderQuotaBars();
+      populateFilterOptions();
+      renderCalendar();
+    }
+
+    function canUserEdit() {
+      return currentRole !== 'guest';
+    }
+
+    function isCategoryOwn(catId) {
+      return (currentRole === catId || (currentRole === 'atemschutz' && catId.startsWith('atemschutz')) || (['verkehr', 'sanitaet', 'elektra'].includes(currentRole) && (currentRole === catId || catId === 'kombi_vse')));
+    }
+
+    function canUserEditCategory(catId) {
+      if (!canUserEdit()) return false;
+      if (['kommandant', 'kommandant_stv', 'fourier'].includes(currentRole)) return true;
+      if (catId.startsWith('k_')) return false;
+      if (currentRole === 'atemschutz' && catId.startsWith('atemschutz')) return true;
+      if (['verkehr', 'sanitaet', 'elektra'].includes(currentRole) && (currentRole === catId || catId === 'kombi_vse')) return true;
+      if (currentRole === catId) return true;
+      return false;
+    }
+
+    function getRoleName(role) {
+      if (role === 'kommandant') return 'Kommandant (Admin)';
+      if (role === 'kommandant_stv') return 'Kommandant Stv';
+      if (role === 'fourier') return 'Fourier';
+      if (role === 'pending') return 'Wartet auf Freischaltung';
+      if (role === 'guest') return 'Gast (Nur Lesen)';
+      const cat = CATEGORIES.find(c => c.id === role);
+      return cat ? `Chef ${cat.name}` : role;
+    }
+
+    function populateFormCategories() {
+      const select = document.getElementById('form-category');
+      if (!select) return;
+      select.innerHTML = '';
+
+      const currentYearStr = String(currentYear);
+      const isVSEChef = ['verkehr', 'sanitaet', 'elektra'].includes(currentRole);
+
+      if (['kommandant', 'kommandant_stv', 'fourier'].includes(currentRole)) {
+        const groupK = document.createElement('optgroup');
+        groupK.label = "Kommandanten- / Kader-Übungen & Anlässe";
+        CATEGORIES.filter(c => c.isKommandant).forEach(cat => {
+          const count = exercises.filter(e => e.categoryId === cat.id && e.date.startsWith(currentYearStr)).length;
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = `${cat.name} (${count}/${cat.maxQuota})`;
+          groupK.appendChild(opt);
+        });
+        select.appendChild(groupK);
+
+        const groupDept = document.createElement('optgroup');
+        groupDept.label = "──────── Abteilungen & Kombi ────────";
+        CATEGORIES.filter(c => !c.isKommandant).forEach(cat => {
+          const count = exercises.filter(e => e.categoryId === cat.id && e.date.startsWith(currentYearStr)).length;
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = `${cat.name} (${count}/${cat.maxQuota})`;
+          groupDept.appendChild(opt);
+        });
+        select.appendChild(groupDept);
+      } else if (isVSEChef) {
+        [currentRole, 'kombi_vse'].forEach(catId => {
+          const cat = CATEGORIES.find(c => c.id === catId);
+          if (!cat) return;
+          const count = exercises.filter(e => e.categoryId === cat.id && e.date.startsWith(currentYearStr)).length;
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = `${cat.name} (${count}/${cat.maxQuota})`;
+          select.appendChild(opt);
+        });
+      } else {
+        CATEGORIES.filter(c => c.id === currentRole || (currentRole === 'atemschutz' && c.id.startsWith('atemschutz'))).forEach(cat => {
+          const count = exercises.filter(e => e.categoryId === cat.id && e.date.startsWith(currentYearStr)).length;
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = `${cat.name} (${count}/${cat.maxQuota})`;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function populateFilterOptions() {
+      const filterSelect = document.getElementById('category-filter');
+      if (!filterSelect) return;
+      const curVal = filterSelect.value;
+      filterSelect.innerHTML = '<option value="all">Alle Sparten / Abteilungen</option>';
+
+      CATEGORIES.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.name;
+        filterSelect.appendChild(opt);
+      });
+      filterSelect.value = curVal || 'all';
+    }
+
+    function setLocationFormValue(val) {
+      const select = document.getElementById('form-location-select');
+      const customInput = document.getElementById('form-location-custom');
+      
+      if (val === 'Feuerwehrlokal Uezwil' || val === 'Feuerwehrlokal Büttikon') {
+        select.value = val;
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      } else {
+        select.value = 'custom';
+        customInput.classList.remove('hidden');
+        customInput.value = val || '';
+      }
+    }
+
+    function handleLocationSelectChange() {
+      const select = document.getElementById('form-location-select');
+      const customInput = document.getElementById('form-location-custom');
+      if (select.value === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+      }
+    }
+
+    function handleCategorySelectChange() {
+      const catId = document.getElementById('form-category').value;
+      const kombiNotice = document.getElementById('kombi-notice');
+      
+      if (catId === 'kombi_vse') {
+        if (kombiNotice) kombiNotice.classList.remove('hidden');
+      } else {
+        if (kombiNotice) kombiNotice.classList.add('hidden');
+      }
+    }
+
+    function createQuotaCard(cat, count, isFull = false) {
+      const pct = Math.min(100, Math.round((count / cat.maxQuota) * 100));
+      const remaining = Math.max(0, cat.maxQuota - count);
+      const isCollapsed = !!collapsedCards[cat.id];
+
+      const card = document.createElement('div');
+      card.className = `bg-slate-950 p-4 rounded-xl border border-slate-800/80 shadow-lg flex flex-col justify-between transition group relative`;
+
+      card.onclick = () => {
+        const filterSelect = document.getElementById('category-filter');
+        if (filterSelect) {
+          filterSelect.value = cat.id;
+          renderCalendar();
+        }
+      };
+
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="font-bold text-xs sm:text-sm text-slate-100 group-hover:text-fire-400 transition truncate">${cat.name}</span>
+            </div>
+            <div class="flex items-center gap-1.5 ml-1 flex-shrink-0">
+              <span class="text-xs font-bold text-slate-300 bg-slate-900 border-slate-800 px-2 py-0.5 rounded-lg border">
+                ${count} / ${cat.maxQuota}
+              </span>
+              <button onclick="toggleCardCollapse(event, '${cat.id}')" class="text-slate-400 hover:text-white p-1 text-xs" title="${isCollapsed ? 'Aufklappen' : 'Zuklappen'}">
+                <i class="fa-solid fa-chevron-${isCollapsed ? 'down' : 'up'}"></i>
+              </button>
+            </div>
+          </div>
+          ${!isCollapsed ? `
+            <div class="flex items-baseline justify-between mt-3 mb-1.5">
+              <span class="text-xs font-medium text-slate-400">
+                ${isFull ? 'Abgeschlossen' : `Noch ${remaining} frei`}
+              </span>
+              <span class="text-xs font-bold text-slate-300">${pct}%</span>
+            </div>
+          ` : ''}
+        </div>
+        ${!isCollapsed ? `
+          <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800 mt-1">
+            <div class="${isFull ? 'bg-emerald-500' : cat.color} h-full transition-all duration-300 rounded-full" style="width: ${pct}%"></div>
+          </div>
+        ` : ''}
+      `;
+      return card;
+    }
+
+    function renderQuotaBars() {
+      const container = document.getElementById('quota-bars-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      let totalBooked = 0;
+      let totalMax = 0;
+      const currentYearStr = String(currentYear);
+
+      const myOpenCategories = [];
+      const myFullCategories = [];
+      const otherOpenCategories = [];
+      const otherFullCategories = [];
+
+      CATEGORIES.forEach(cat => {
+        const count = exercises.filter(e => e.categoryId === cat.id && e.date.startsWith(currentYearStr)).length;
+        totalBooked += count;
+        totalMax += cat.maxQuota;
+        
+        if (count >= cat.maxQuota) {
+          if (isCategoryOwn(cat.id)) {
+            myFullCategories.push({ cat, count });
+          } else {
+            otherFullCategories.push({ cat, count });
+          }
+        } else {
+          if (isCategoryOwn(cat.id)) {
+            myOpenCategories.push({ cat, count });
+          } else {
+            otherOpenCategories.push({ cat, count });
+          }
+        }
+      });
+
+      if (myOpenCategories.length > 0 && !['kommandant', 'kommandant_stv', 'fourier', 'guest'].includes(currentRole)) {
+        const myOpenHeader = document.createElement('div');
+        myOpenHeader.className = 'flex items-center justify-between pb-2 mb-3 border-b border-slate-800 cursor-pointer select-none';
+        myOpenHeader.onclick = () => toggleSection('my_open');
+        myOpenHeader.innerHTML = `
+          <div class="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider">
+            <i class="fa-solid fa-chevron-${sectionsCollapsed.my_open ? 'right' : 'down'} text-slate-400 text-[10px]"></i>
+            <span>Meine offene Kontingente (${myOpenCategories.length})</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-semibold">${sectionsCollapsed.my_open ? 'Aufklappen' : 'Zuklappen'}</span>
+        `;
+        container.appendChild(myOpenHeader);
+
+        if (!sectionsCollapsed.my_open) {
+          const myOpenGrid = document.createElement('div');
+          myOpenGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6';
+          myOpenCategories.forEach(({ cat, count }) => {
+            myOpenGrid.appendChild(createQuotaCard(cat, count, false));
+          });
+          container.appendChild(myOpenGrid);
+        }
+      }
+
+      if (myFullCategories.length > 0 && !['kommandant', 'kommandant_stv', 'fourier', 'guest'].includes(currentRole)) {
+        const myFullHeader = document.createElement('div');
+        myFullHeader.className = 'flex items-center justify-between pb-2 mb-3 border-b border-slate-800 cursor-pointer select-none';
+        myFullHeader.onclick = () => toggleSection('my_full');
+        myFullHeader.innerHTML = `
+          <div class="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider">
+            <i class="fa-solid fa-chevron-${sectionsCollapsed.my_full ? 'right' : 'down'} text-slate-400 text-[10px]"></i>
+            <span>Meine abgeschlossene Kontingente (${myFullCategories.length})</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-semibold">${sectionsCollapsed.my_full ? 'Aufklappen' : 'Zuklappen'}</span>
+        `;
+        container.appendChild(myFullHeader);
+
+        if (!sectionsCollapsed.my_full) {
+          const myFullGrid = document.createElement('div');
+          myFullGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6';
+          myFullCategories.forEach(({ cat, count }) => {
+            myFullGrid.appendChild(createQuotaCard(cat, count, true));
+          });
+          container.appendChild(myFullGrid);
+        }
+      }
+
+      if (otherOpenCategories.length > 0) {
+        const openHeader = document.createElement('div');
+        openHeader.className = 'flex items-center justify-between pb-2 mb-3 border-b border-slate-800 cursor-pointer select-none';
+        openHeader.onclick = () => toggleSection('open');
+        openHeader.innerHTML = `
+          <div class="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider">
+            <i class="fa-solid fa-chevron-${sectionsCollapsed.open ? 'right' : 'down'} text-slate-400 text-[10px]"></i>
+            <span>Offene Kontingente (${otherOpenCategories.length})</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-semibold">${sectionsCollapsed.open ? 'Aufklappen' : 'Zuklappen'}</span>
+        `;
+        container.appendChild(openHeader);
+
+        if (!sectionsCollapsed.open) {
+          const openGrid = document.createElement('div');
+          openGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4';
+          otherOpenCategories.forEach(({ cat, count }) => {
+            openGrid.appendChild(createQuotaCard(cat, count, false));
+          });
+          container.appendChild(openGrid);
+        }
+      }
+
+      if (otherFullCategories.length > 0) {
+        const fullHeader = document.createElement('div');
+        fullHeader.className = 'mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between cursor-pointer select-none';
+        fullHeader.onclick = () => toggleSection('full');
+        fullHeader.innerHTML = `
+          <div class="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider">
+            <i class="fa-solid fa-chevron-${sectionsCollapsed.full ? 'right' : 'down'} text-slate-400 text-[10px]"></i>
+            <span>Abgeschlossene Kontingente (${otherFullCategories.length})</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-semibold">${sectionsCollapsed.full ? 'Aufklappen' : 'Zuklappen'}</span>
+        `;
+        container.appendChild(fullHeader);
+
+        if (!sectionsCollapsed.full) {
+          const fullGrid = document.createElement('div');
+          fullGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-2';
+          otherFullCategories.forEach(({ cat, count }) => {
+            fullGrid.appendChild(createQuotaCard(cat, count, true));
+          });
+          container.appendChild(fullGrid);
+        }
+      }
+
+      document.getElementById('quota-total-summary').textContent = `Gesamt (${currentYear}): ${totalBooked} / ${totalMax} Übungen verteilt`;
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      document.getElementById('view-year-btn').className = mode === 'year' ? 'px-3.5 py-1.5 rounded-lg font-bold transition bg-fire-600 text-white shadow' : 'px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition';
+      document.getElementById('view-month-btn').className = mode === 'month' ? 'px-3.5 py-1.5 rounded-lg font-bold transition bg-fire-600 text-white shadow' : 'px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition';
+      document.getElementById('view-list-btn').className = mode === 'list' ? 'px-3.5 py-1.5 rounded-lg font-bold transition bg-fire-600 text-white shadow' : 'px-3.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition';
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      renderQuotaBars();
+      const container = document.getElementById('calendar-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const searchTerm = (document.getElementById('search-input')?.value || '').toLowerCase();
+      const catFilter = document.getElementById('category-filter')?.value || 'all';
+      const currentYearStr = String(currentYear);
+
+      let filtered = exercises.filter(ex => {
+        const isCurrentYear = ex.date && ex.date.startsWith(currentYearStr);
+        if (!isCurrentYear) return false;
+
+        const cat = CATEGORIES.find(c => c.id === ex.categoryId);
+        const matchCat = catFilter === 'all' || ex.categoryId === catFilter;
+        const matchSearch = !searchTerm || 
+          (cat && cat.name.toLowerCase().includes(searchTerm)) ||
+          (ex.location && ex.location.toLowerCase().includes(searchTerm)) ||
+          (ex.description && ex.description.toLowerCase().includes(searchTerm));
+        return matchCat && matchSearch;
+      });
+
+      if (currentViewMode === 'year') {
+        renderYearGrid(container, filtered);
+      } else if (currentViewMode === 'month') {
+        renderSingleMonthView(container, filtered);
+      } else {
+        renderListView(container, filtered);
+      }
+    }
+
+    function renderYearGrid(container, filtered) {
+      const yearGrid = document.createElement('div');
+      yearGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+
+      const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+
+      for (let m = 0; m < 12; m++) {
+        const monthCard = document.createElement('div');
+        monthCard.className = 'glass-card rounded-2xl p-3.5 flex flex-col justify-between shadow-xl';
+
+        const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+        const firstDayOfWeek = new Date(currentYear, m, 1).getDay(); 
+        const startOffset = (firstDayOfWeek + 6) % 7; 
+
+        let daysHtml = '';
+        const dayLabels = ['M', 'D', 'M', 'D', 'F', 'S', 'S'];
+        let dayHeaderHtml = dayLabels.map(d => `<div class="text-[10px] font-black text-slate-500 text-center py-1">${d}</div>`).join('');
+
+        for (let i = 0; i < startOffset; i++) {
+          daysHtml += `<div class="h-9 rounded-lg bg-slate-950/20"></div>`;
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${currentYear}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dayExercises = filtered.filter(e => e.date === dateStr);
+
+          let exBadges = dayExercises.map(ex => {
+            const cat = CATEGORIES.find(c => c.id === ex.categoryId);
+            return `
+              <button onclick="event.stopPropagation(); openEditModal('${ex.id}')" class="${cat ? cat.color : 'bg-fire-600'} text-white text-[9px] px-1.5 py-0.5 rounded font-bold w-full truncate text-left mb-0.5 shadow-sm hover:brightness-110 transition" title="${cat ? cat.name : ''} - ${ex.startTime}">
+                ${ex.startTime} ${cat ? cat.name : ''}
+              </button>
+            `;
+          }).join('');
+
+          daysHtml += `
+            <div ${canUserEdit() ? `onclick="openAddModal('${dateStr}')"` : ''} class="min-h-[44px] bg-slate-950 border border-slate-800/80 rounded-lg p-1 flex flex-col justify-between hover:border-slate-500 ${canUserEdit() ? 'cursor-pointer hover:bg-slate-900/80' : ''} transition group relative">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-400 group-hover:text-white">${day}</span>
+              </div>
+              <div class="mt-0.5 space-y-0.5">${exBadges}</div>
+            </div>
+          `;
+        }
+
+        monthCard.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2.5 pb-1.5 border-b border-slate-800">
+              <h3 class="font-extrabold text-sm text-white">${monthNames[m]} ${currentYear}</h3>
+              <span class="text-[10px] font-extrabold text-slate-400 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
+                ${filtered.filter(e => new Date(e.date).getMonth() === m).length} Übungen
+              </span>
+            </div>
+            <div class="grid grid-cols-7 gap-1">
+              ${dayHeaderHtml}
+              ${daysHtml}
+            </div>
+          </div>
+        `;
+
+        yearGrid.appendChild(monthCard);
+      }
+
+      container.appendChild(yearGrid);
+    }
+
+    function renderSingleMonthView(container, filtered) {
+      const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+      
+      const navHeader = document.createElement('div');
+      navHeader.className = 'flex items-center justify-between mb-4 glass-card p-3 rounded-2xl';
+      navHeader.innerHTML = `
+        <button onclick="changeMonth(-1)" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold text-white transition"><i class="fa-solid fa-chevron-left"></i> Vorheriger</button>
+        <h3 class="text-base font-black text-white uppercase">${monthNames[currentMonthIndex]} ${currentYear}</h3>
+        <button onclick="changeMonth(1)" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold text-white transition">Nächster <i class="fa-solid fa-chevron-right"></i></button>
+      `;
+      container.appendChild(navHeader);
+
+      const monthFiltered = filtered.filter(e => new Date(e.date).getMonth() === currentMonthIndex);
+      renderListView(container, monthFiltered);
+    }
+
+    function changeMonth(delta) {
+      currentMonthIndex = (currentMonthIndex + delta + 12) % 12;
+      renderCalendar();
+    }
+
+    function renderListView(container, filtered) {
+      if (filtered.length === 0) {
+        container.innerHTML += `
+          <div class="glass-card rounded-2xl p-8 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-calendar-xmark text-3xl text-slate-600 mb-2"></i>
+            <p class="font-medium">Keine Übungen für diese Auswahl gefunden.</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const list = document.createElement('div');
+      list.className = 'space-y-2.5';
+
+      filtered.forEach(ex => {
+        const cat = CATEGORIES.find(c => c.id === ex.categoryId);
+        const dateObj = new Date(ex.date);
+        const dateFormatted = dateObj.toLocaleDateString('de-CH', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        const item = document.createElement('div');
+        item.className = 'glass-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition shadow-lg';
+        
+        item.innerHTML = `
+          <div class="flex items-start gap-3.5">
+            <div class="w-2.5 h-10 ${cat ? cat.color : 'bg-fire-600'} rounded-full flex-shrink-0 mt-0.5 shadow-sm"></div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-black text-sm text-white">${cat ? cat.name : 'Übung'}</span>
+                <span class="text-[10px] font-bold text-slate-400 bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">${dateFormatted}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-1 font-medium">
+                <span><i class="fa-regular fa-clock text-fire-500"></i> ${ex.startTime} - ${ex.endTime} Uhr</span>
+                <span><i class="fa-solid fa-location-dot text-fire-500"></i> ${ex.location}</span>
+              </div>
+              ${ex.description ? `<p class="text-xs text-slate-300 mt-1.5 italic">${ex.description}</p>` : ''}
+            </div>
+          </div>
+
+          ${canUserEditCategory(ex.categoryId) ? `
+            <div class="flex items-center gap-2 self-end sm:self-center pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800 w-full sm:w-auto justify-end">
+              <button onclick="openEditModal('${ex.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 border border-slate-700 transition">
+                <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
+              </button>
+              <button onclick="deleteExercise('${ex.id}')" class="bg-fire-900/30 hover:bg-fire-900/50 text-fire-400 text-xs px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1.5 border border-fire-800/40 transition">
+                <i class="fa-solid fa-trash"></i> Löschen
+              </button>
+            </div>
+          ` : ''}
+        `;
+
+        list.appendChild(item);
+      });
+
+      container.appendChild(list);
+    }
+
+    function openAddModal(dateStr = '') {
+      if (!canUserEdit()) return;
+      
+      populateFormCategories();
+      document.getElementById('exercise-id').value = '';
+      document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-calendar-plus text-fire-500"></i> Neue Übung eintragen (${currentYear})`;
+      
+      const deleteBtn = document.getElementById('form-delete-btn');
+      if (deleteBtn) deleteBtn.classList.add('hidden');
+
+      const defaultCat = ['kommandant', 'kommandant_stv', 'fourier'].includes(currentRole) ? 'k_kader' : (['verkehr', 'sanitaet', 'elektra'].includes(currentRole) ? currentRole : currentRole);
+      const select = document.getElementById('form-category');
+      if (select.querySelector(`option[value="${defaultCat}"]`)) {
+        select.value = defaultCat;
+      } else if (select.options.length > 0) {
+        select.value = select.options[0].value;
+      }
+
+      const dateInput = document.getElementById('form-date');
+      dateInput.min = `${currentYear}-01-01`;
+      dateInput.max = `${currentYear}-12-31`;
+      dateInput.value = dateStr || `${currentYear}-01-15`;
+
+      document.getElementById('form-time-start').value = '19:30';
+      document.getElementById('form-time-end').value = '21:30';
+      setLocationFormValue('Feuerwehrlokal Uezwil');
+      document.getElementById('form-description').value = '';
+
+      handleCategorySelectChange();
+      document.getElementById('exercise-modal').classList.remove('hidden');
+    }
+
+    function openEditModal(id) {
+      const ex = exercises.find(e => e.id === id);
+      if (!ex) return;
+      if (!canUserEditCategory(ex.categoryId)) return;
+
+      populateFormCategories();
+      document.getElementById('exercise-id').value = ex.id;
+      document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-pen-to-square text-fire-500"></i> Übung bearbeiten';
+
+      const deleteBtn = document.getElementById('form-delete-btn');
+      if (deleteBtn) deleteBtn.classList.remove('hidden');
+
+      document.getElementById('form-category').value = ex.categoryId;
+      document.getElementById('form-date').value = ex.date;
+      document.getElementById('form-time-start').value = ex.startTime;
+      document.getElementById('form-time-end').value = ex.endTime;
+      setLocationFormValue(ex.location);
+      document.getElementById('form-description').value = ex.description || '';
+
+      handleCategorySelectChange();
+      document.getElementById('exercise-modal').classList.remove('hidden');
+    }
+
+    function handleModalDelete() {
+      const id = document.getElementById('exercise-id').value;
+      if (!id) return;
+      closeExerciseModal();
+      deleteExercise(id);
+    }
+
+    function closeExerciseModal() {
+      document.getElementById('exercise-modal').classList.add('hidden');
+    }
+
+    function handleExerciseFormSubmit(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('exercise-id').value;
+      const categoryId = document.getElementById('form-category').value;
+      const date = document.getElementById('form-date').value;
+      const startTime = document.getElementById('form-time-start').value;
+      const endTime = document.getElementById('form-time-end').value;
+      
+      const locSelect = document.getElementById('form-location-select').value;
+      const location = locSelect === 'custom' ? document.getElementById('form-location-custom').value : locSelect;
+      const description = document.getElementById('form-description').value;
+
+      if (id) {
+        const ex = exercises.find(item => item.id === id);
+        if (ex) {
+          ex.categoryId = categoryId;
+          ex.date = date;
+          ex.startTime = startTime;
+          ex.endTime = endTime;
+          ex.location = location;
+          ex.description = description;
+        }
+        showToast('Übung erfolgreich aktualisiert', 'success');
+      } else {
+        const newEx = {
+          id: 'ex-' + Date.now(),
+          categoryId,
+          date,
+          startTime,
+          endTime,
+          location,
+          description
+        };
+        exercises.push(newEx);
+        showToast('Neue Übung eingetragen', 'success');
+      }
+
+      saveExercises();
+      closeExerciseModal();
+      renderCalendar();
+    }
+
+    function deleteExercise(id) {
+      showConfirmModal(
+        'Übung löschen',
+        'Möchtest du diese Übung wirklich unwiderruflich entfernen?',
+        () => {
+          exercises = exercises.filter(e => e.id !== id);
+          saveExercises();
+          renderCalendar();
+          showToast('Übung gelöscht', 'info');
+        }
+      );
+    }
+
+    function openAuthModal(tab = 'login') {
+      switchAuthTab(tab);
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+      const loginBtn = document.getElementById('auth-tab-login-btn');
+      const registerBtn = document.getElementById('auth-tab-register-btn');
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+
+      if (tab === 'login') {
+        loginBtn.className = 'flex-1 pb-3 border-b-2 border-fire-500 text-fire-400 font-bold';
+        registerBtn.className = 'flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium';
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+      } else {
+        registerBtn.className = 'flex-1 pb-3 border-b-2 border-fire-500 text-fire-400 font-bold';
+        loginBtn.className = 'flex-1 pb-3 border-b-2 border-transparent text-slate-400 hover:text-white font-medium';
+        registerForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const user = registeredUsers.find(u => u.email === email);
+      if (!user) {
+        showToast('Konto nicht gefunden. Bitte zuerst registrieren.', 'error');
+        return;
+      }
+      if (user.status === 'pending') {
+        showToast('Konto wartet noch auf Freischaltung durch Kommandanten.', 'info');
+        return;
+      }
+      showToast(`Erfolgreich angemeldet als ${getRoleName(user.role)}`, 'success');
+      switchSimulatedRole(user.role);
+      closeAuthModal();
+    }
+
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('register-email').value;
+      const reqRole = document.getElementById('register-role-request').value;
+
+      let user = registeredUsers.find(u => u.email === email);
+      if (user) {
+        showToast('Diese E-Mail-Adresse ist bereits registriert.', 'error');
+        return;
+      }
+
+      user = {
+        uid: 'u-' + Date.now(),
+        email,
+        role: 'pending',
+        requestedRole: reqRole,
+        status: 'pending'
+      };
+      registeredUsers.push(user);
+      saveUsers();
+      showToast('Registrierung übermittelt. Wartet auf Kommandant.', 'success');
+      closeAuthModal();
+    }
+
+    function triggerForgotPassword(inputId = 'login-email') {
+      const email = document.getElementById(inputId)?.value;
+      if (!email) {
+        showToast('Bitte E-Mail-Adresse im Feld eingeben.', 'error');
+        return;
+      }
+      showToast(`PW-Reset-Link an ${email} gesendet.`, 'info');
+    }
+
+    function openAdminUsersModal() {
+      if (currentRole !== 'kommandant') return;
+      renderAdminUsersLists();
+      document.getElementById('admin-users-modal').classList.remove('hidden');
+    }
+
+    function closeAdminUsersModal() {
+      document.getElementById('admin-users-modal').classList.add('hidden');
+    }
+
+    function switchAdminTab(tab) {
+      const pendingBtn = document.getElementById('admin-tab-pending-btn');
+      const allBtn = document.getElementById('admin-tab-all-btn');
+      const pendingSec = document.getElementById('admin-tab-pending');
+      const allSec = document.getElementById('admin-tab-all');
+
+      if (tab === 'pending') {
+        pendingBtn.className = 'px-4 py-2 border-b-2 border-fire-500 text-fire-400 font-bold';
+        allBtn.className = 'px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white';
+        pendingSec.classList.remove('hidden');
+        allSec.classList.add('hidden');
+      } else {
+        allBtn.className = 'px-4 py-2 border-b-2 border-fire-500 text-fire-400 font-bold';
+        pendingBtn.className = 'px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-white';
+        allSec.classList.remove('hidden');
+        pendingSec.classList.add('hidden');
+      }
+    }
+
+    function updatePendingBadge() {
+      const badge = document.getElementById('pending-users-badge');
+      if (!badge) return;
+      const count = registeredUsers.filter(u => u.status === 'pending').length;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function renderAdminUsersLists() {
+      const pendingList = registeredUsers.filter(u => u.status === 'pending');
+      const pendingContainer = document.getElementById('pending-users-list');
+      
+      if (pendingContainer) {
+        if (pendingList.length === 0) {
+          pendingContainer.innerHTML = '<p class="text-slate-400 p-4 text-center bg-slate-950 rounded-xl border border-slate-800">Keine offenen Freischaltungen vorhanden.</p>';
+        } else {
+          pendingContainer.innerHTML = pendingList.map(u => `
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+              <div>
+                <p class="font-bold text-white">${u.email}</p>
+                <p class="text-[10px] text-amber-400">Angefordert: ${getRoleName(u.requestedRole || u.role)}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <select id="role-select-${u.uid}" class="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg p-1.5 font-medium">
+                  <option value="fourier">Fourier</option>
+                  <option value="kommandant_stv">Kommandant Stv</option>
+                  <option value="atemschutz" ${u.requestedRole === 'atemschutz' ? 'selected' : ''}>Chef Atemschutz</option>
+                  <option value="atemschutz_fitnesstest" ${u.requestedRole === 'atemschutz_fitnesstest' ? 'selected' : ''}>Chef Atemschutz Fitnesstest</option>
+                  <option value="maschinisten" ${u.requestedRole === 'maschinisten' ? 'selected' : ''}>Chef Maschinisten</option>
+                  <option value="fahrer" ${u.requestedRole === 'fahrer' ? 'selected' : ''}>Chef Fahrer</option>
+                  <option value="verkehr" ${u.requestedRole === 'verkehr' ? 'selected' : ''}>Chef Verkehr</option>
+                  <option value="sanitaet" ${u.requestedRole === 'sanitaet' ? 'selected' : ''}>Chef Sanität</option>
+                  <option value="elektra" ${u.requestedRole === 'elektra' ? 'selected' : ''}>Chef Elektra</option>
+                </select>
+                <button onclick="approveUser('${u.uid}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-3 py-1.5 rounded-lg shadow transition">Bestätigen</button>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+
+      const allContainer = document.getElementById('all-users-list');
+      if (allContainer) {
+        allContainer.innerHTML = registeredUsers.map(u => `
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+            <div>
+              <p class="font-bold text-white">${u.email}</p>
+              <p class="text-[10px] text-slate-400">Rolle: <span class="text-slate-200 font-semibold">${getRoleName(u.role)}</span></p>
+            </div>
+            <button onclick="sendUserPasswordReset('${u.email}')" class="bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-bold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-key"></i> PW-Reset Link senden
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function approveUser(uid) {
+      const user = registeredUsers.find(u => u.uid === uid);
+      if (user) {
+        const assignedRole = document.getElementById(`role-select-${uid}`)?.value || user.requestedRole;
+        user.role = assignedRole;
+        user.status = 'active';
+        saveUsers();
+        renderAdminUsersLists();
+        showToast(`Nutzer ${user.email} freigeschaltet.`, 'success');
+      }
+    }
+
+    function sendUserPasswordReset(email) {
+      showToast(`Passwort-Zurücksetz-Link an ${email} versendet.`, 'info');
+    }
+
+    function exportToExcel() {
+      const currentYearStr = String(currentYear);
+      const yearExercises = exercises.filter(e => e.date && e.date.startsWith(currentYearStr));
+      yearExercises.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      let csvContent = "data:text/csv;charset=utf-8,Datum;Startzeit;Endzeit;Sparte;Ort;Beschreibung\r\n";
+      
+      yearExercises.forEach(ex => {
+        const cat = CATEGORIES.find(c => c.id === ex.categoryId);
+        const catName = cat ? cat.name : ex.categoryId;
+        const row = [
+          ex.date,
+          ex.startTime,
+          ex.endTime,
+          `"${catName}"`,
+          `"${ex.location || ''}"`,
+          `"${(ex.description || '').replace(/"/g, '""')}"`
+        ];
+        csvContent += row.join(";") + "\r\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Feuerwehr_Jahresplanung_${currentYear}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast(`Jahresplan ${currentYear} als Excel/CSV heruntergeladen`, 'success');
+    }
+
+    function exportToPDF() {
+      const currentYearStr = String(currentYear);
+      const yearExercises = exercises.filter(e => e.date && e.date.startsWith(currentYearStr));
+      yearExercises.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      let rowsHtml = '';
+      if (yearExercises.length === 0) {
+        rowsHtml = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">Keine Übungen für das Jahr ${currentYear} erfasst.</td></tr>`;
+      } else {
+        yearExercises.forEach(ex => {
+          const cat = CATEGORIES.find(c => c.id === ex.categoryId);
+          const catName = cat ? cat.name : ex.categoryId;
+          const dateObj = new Date(ex.date);
+          const dateFormatted = dateObj.toLocaleDateString('de-CH', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+          
+          rowsHtml += `
+            <tr>
+              <td style="padding: 8px 12px; border-bottom: 1px solid #ddd;">${dateFormatted}</td>
+              <td style="padding: 8px 12px; border-bottom: 1px solid #ddd;">${ex.startTime} - ${ex.endTime}</td>
+              <td style="padding: 8px 12px; border-bottom: 1px solid #ddd; font-weight: bold;">${catName}</td>
+              <td style="padding: 8px 12px; border-bottom: 1px solid #ddd;">${ex.location || ''}</td>
+              <td style="padding: 8px 12px; border-bottom: 1px solid #ddd; color: #555;">${ex.description || '-'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showToast('Pop-up wurde vom Browser blockiert. Bitte erlauben Sie Pop-ups.', 'error');
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="de">
+        <head>
+          <meta charset="UTF-8">
+          <title>Jahresplanung ${currentYear} - Feuerwehr Büttikon-Uezwil</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; margin: 20px; }
+            h1 { font-size: 20px; text-transform: uppercase; margin-bottom: 4px; }
+            h2 { font-size: 14px; color: #555; margin-top: 0; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+            th { background-color: #dc2626; color: white; text-align: left; padding: 10px 12px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Feuerwehr Büttikon-Uezwil</h1>
+          <h2>Jahresplanung ${currentYear}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Zeit</th>
+                <th>Sparte</th>
+                <th>Ort</th>
+                <th>Beschreibung</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <div style="margin-top: 30px; text-align: center;">
+            <button onclick="window.print()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Als PDF speichern / Drucken</button>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      showToast('PDF-Ansicht geöffnet', 'success');
+    }
+
+    window.onload = function() {
+      loadInitialData();
+    };
+  </script>
+
+</body>
+</html>
